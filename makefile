@@ -4,19 +4,24 @@ help:
 
 .PHONY: clean
 clean:
-	bash -ci "ac 3; python setup.py clean"
-	rm -rf build .pytest_cache
-	find * -name '*.pyc' -delete
-	find * -name __pycache__ -delete
+	pip uninstall int_str
+	rm -rf \
+		build \
+		dist \
+		int_str.egg-info \
+		int_str.cpython-310-x86_64-linux-gnu.so \
+		.pytest_cache
+	# find * -name '*.pyc' -delete
+	# find * -name __pycache__ -delete
 
 .PHONY: build
 build:
-	bash -ci "ac 3; python setup.py build"
+	python -m build
 
 .PHONY: install
-install: build
-	bash -ci "ac 3; python setup.py install"
+install: 
+	pip install -e .
 
 .PHONY: test
 test: install
-	bash -ci "ac 3; pytest -v -s tests"
+	pytest -v -s tests
