@@ -1,5 +1,5 @@
 import sys
-from int_str import str_to_int, int_to_str, str_to_decint, decint_to_str
+from int_str import str_to_int, int_to_str, str_to_decint, decint_to_str, increment_decint
 
 
 def get_shift():
@@ -52,3 +52,11 @@ def test_decint():
     for m in range(10):
         check(str(10 ** (m * get_shift()) - 1))
         check(str(10 ** (m * get_shift())))
+
+
+def test_increment_decint():
+    s1 = '100'
+    s2 = '10'
+    n = str_to_decint(s1)
+    increment_decint(n, str_to_decint(s2))
+    assert decint_to_str(n) == str(int(s1) + int(s2))

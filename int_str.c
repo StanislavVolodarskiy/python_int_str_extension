@@ -324,13 +324,15 @@ int_to_str(PyObject *self, PyObject *args)
 static PyObject *
 increment_decint(PyObject *self, PyObject *args)
 {
-    PyObject *n;
+    PyObject *a;
+    PyObject *b;
 
-    if (!PyArg_ParseTuple(args, "O!", &PyLong_Type, &n)) {
+    if (!PyArg_ParseTuple(args, "O!O!", &PyLong_Type, &a, &PyLong_Type, &b)) {
         return NULL;
     }
 
-    return long_to_decimal_string(n);
+    declong_increment((PyLongObject *) a, (PyLongObject *) b);
+    return NULL;
 }
 
 static PyMethodDef methods[] = {
