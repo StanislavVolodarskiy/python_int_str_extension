@@ -1,0 +1,2 @@
+- implement declong_increment
+- add test for wrong argument values/types
