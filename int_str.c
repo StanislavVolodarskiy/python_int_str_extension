@@ -6,16 +6,72 @@
         if (PyErr_CheckSignals()) PyTryBlock    \
     } while(0)
 
-static int
-declong_increment(PyLongObject *a, PyLongObject *b)
+static PyLongObject *
+long_normalize(PyLongObject *v)
 {
-    if (Py_SIZE(a) < 0 || Py_SIZE(b) < 0) {
+    Py_ssize_t j = Py_ABS(Py_SIZE(v));
+    Py_ssize_t i = j;
+
+    while (i > 0 && v->ob_digit[i-1] == 0)
+        --i;
+    if (i != j) {
+        Py_SET_SIZE(v, (Py_SIZE(v) < 0) ? -(i) : i);
+    }
+    return v;
+}
+
+static PyLongObject *
+declong_add(PyLongObject *a, PyLongObject *b)
+{
+    Py_ssize_t size_a = Py_SIZE(a);
+    Py_ssize_t size_b = Py_SIZE(b);
+
+    if (size_a < 0 || size_b < 0) {
         PyErr_SetString(PyExc_ValueError, "negative argument");
-        return -1;
+        return NULL;
     }
 
-    PyErr_BadInternalCall();
-    return -1;
+    PyLongObject *z;
+    Py_ssize_t i;
+    digit carry = 0;
+
+    /* Ensure a is the larger of the two: */
+    if (size_a < size_b) {
+        { PyLongObject *temp = a; a = b; b = temp; }
+        { Py_ssize_t size_temp = size_a;
+            size_a = size_b;
+            size_b = size_temp; }
+    }
+    z = _PyLong_New(size_a + 1);
+    if (z == NULL)
+        return NULL;
+    for (i = 0; i < size_b; ++i) {
+        carry += a->ob_digit[i] + b->ob_digit[i];
+        z->ob_digit[i] = carry % _PyLong_DECIMAL_BASE;
+        carry /= _PyLong_DECIMAL_BASE;
+    }
+    for (; i < size_a; ++i) {
+        carry += a->ob_digit[i];
+        z->ob_digit[i] = carry % _PyLong_DECIMAL_BASE;
+        carry /= _PyLong_DECIMAL_BASE;
+    }
+    z->ob_digit[i] = carry;
+    return long_normalize(z);
+}
+
+static PyLongObject *
+declong_mul(PyLongObject *a, PyLongObject *b)
+{
+    Py_ssize_t size_a = Py_SIZE(a);
+    Py_ssize_t size_b = Py_SIZE(b);
+
+    if (size_a < 0 || size_b < 0) {
+        PyErr_SetString(PyExc_ValueError, "negative argument");
+        return NULL;
+    }
+
+    PyErr_SetString(PyExc_RuntimeError, "not implemented");
+    return NULL;
 }
 
 /* Convert an integer to a declong.  A declong is a PyLongObject
@@ -251,7 +307,7 @@ str_to_decint(PyObject *self, PyObject *args)
     n = _PyLong_New(size);
     if (n == NULL)
         return NULL;
-    if (size == 0) 
+    if (size == 0)
         return (PyObject *) n;
 
     assert(size > 0);
@@ -278,7 +334,7 @@ str_to_decint(PyObject *self, PyObject *args)
         k = _PyLong_DECIMAL_SHIFT;
     }
     assert(pout == n->ob_digit);
-    
+
     return (PyObject *) n;
 }
 
@@ -322,7 +378,7 @@ int_to_str(PyObject *self, PyObject *args)
 }
 
 static PyObject *
-increment_decint(PyObject *self, PyObject *args)
+decint_add(PyObject *self, PyObject *args)
 {
     PyObject *a;
     PyObject *b;
@@ -331,8 +387,20 @@ increment_decint(PyObject *self, PyObject *args)
         return NULL;
     }
 
-    declong_increment((PyLongObject *) a, (PyLongObject *) b);
-    return NULL;
+    return (PyObject *)declong_add((PyLongObject *) a, (PyLongObject *) b);
+}
+
+static PyObject *
+decint_mul(PyObject *self, PyObject *args)
+{
+    PyObject *a;
+    PyObject *b;
+
+    if (!PyArg_ParseTuple(args, "O!O!", &PyLong_Type, &a, &PyLong_Type, &b)) {
+        return NULL;
+    }
+
+    return (PyObject *)declong_mul((PyLongObject *) a, (PyLongObject *) b);
 }
 
 static PyMethodDef methods[] = {
@@ -340,7 +408,8 @@ static PyMethodDef methods[] = {
     {"decint_to_str", decint_to_str, METH_VARARGS, "decint to str"},
     {"str_to_int", str_to_int, METH_VARARGS, "str to int"},
     {"int_to_str", int_to_str, METH_VARARGS, "int to str"},
-    {"increment_decint", increment_decint, METH_VARARGS, "increment decint by another decint"},
+    {"decint_add", decint_add, METH_VARARGS, "adds two decints"},
+    {"decint_mul", decint_mul, METH_VARARGS, "muls two decints"},
     {NULL, NULL, 0, NULL}
 };
 

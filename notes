@@ -1,2 +1,6 @@
-- implement declong_increment
++ break implement addition (current implementation is wrong, but the test passes)
++ implement addition
++ implement declong_add
 - add test for wrong argument values/types
+= implement multiplication
+= implement declong_mul
