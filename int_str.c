@@ -70,8 +70,83 @@ declong_mul(PyLongObject *a, PyLongObject *b)
         return NULL;
     }
 
-    PyErr_SetString(PyExc_RuntimeError, "not implemented");
-    return NULL;
+    PyLongObject *z;
+    Py_ssize_t i;
+
+    z = _PyLong_New(size_a + size_b);
+    if (z == NULL)
+        return NULL;
+
+    memset(z->ob_digit, 0, Py_SIZE(z) * sizeof(digit));
+    if (a == b) {
+        /* Efficient squaring per HAC, Algorithm 14.16:
+         * http://www.cacr.math.uwaterloo.ca/hac/about/chap14.pdf
+         * Gives slightly less than a 2x speedup when a == b,
+         * via exploiting that each entry in the multiplication
+         * pyramid appears twice (except for the size_a squares).
+         */
+        for (i = 0; i < size_a; ++i) {
+            twodigits carry;
+            twodigits f = a->ob_digit[i];
+            digit *pz = z->ob_digit + (i << 1);
+            digit *pa = a->ob_digit + i + 1;
+            digit *paend = a->ob_digit + size_a;
+
+            SIGCHECK({
+                    Py_DECREF(z);
+                    return NULL;
+                });
+
+            carry = *pz + f * f;
+            *pz++ = (digit)(carry % _PyLong_DECIMAL_BASE);
+            carry /= _PyLong_DECIMAL_BASE;
+            assert(carry < _PyLong_DECIMAL_BASE);
+
+            /* Now f is added in twice in each column of the
+             * pyramid it appears.  Same as adding f<<1 once.
+             */
+            f <<= 1;
+            while (pa < paend) {
+                carry += *pz + *pa++ * f;
+                *pz++ = (digit)(carry % _PyLong_DECIMAL_BASE);
+                carry /= _PyLong_DECIMAL_BASE;
+                assert(carry <= ((_PyLong_DECIMAL_BASE - 1) << 1));
+            }
+            if (carry) {
+                carry += *pz;
+                *pz++ = (digit)(carry % _PyLong_DECIMAL_BASE);
+                carry /= _PyLong_DECIMAL_BASE;
+            }
+            if (carry)
+                *pz += (digit)(carry % _PyLong_DECIMAL_BASE);
+            assert(carry < _PyLong_DECIMAL_BASE);
+        }
+    }
+    else {      /* a is not the same as b -- gradeschool int mult */
+        for (i = 0; i < size_a; ++i) {
+            twodigits carry = 0;
+            twodigits f = a->ob_digit[i];
+            digit *pz = z->ob_digit + i;
+            digit *pb = b->ob_digit;
+            digit *pbend = b->ob_digit + size_b;
+
+            SIGCHECK({
+                    Py_DECREF(z);
+                    return NULL;
+                });
+
+            while (pb < pbend) {
+                carry += *pz + *pb++ * f;
+                *pz++ = (digit)(carry % _PyLong_DECIMAL_BASE);
+                carry /= _PyLong_DECIMAL_BASE;
+                assert(carry < _PyLong_DECIMAL_BASE);
+            }
+            if (carry)
+                *pz += (digit)(carry % _PyLong_DECIMAL_BASE);
+            assert(carry < _PyLong_DECIMAL_BASE);
+        }
+    }
+    return long_normalize(z);
 }
 
 /* Convert an integer to a declong.  A declong is a PyLongObject

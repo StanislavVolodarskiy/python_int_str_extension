@@ -2,5 +2,6 @@
 + implement addition
 + implement declong_add
 - add test for wrong argument values/types
-= implement multiplication
-= implement declong_mul
++ implement multiplication
++ implement declong_mul
+- implement declong_mul by Karatsuba algorithm

@@ -1,3 +1,4 @@
+import math
 import sys
 from int_str import (
     str_to_int,
@@ -73,3 +74,6 @@ def test_decint_mul():
     n1 = str_to_decint(str(n // 2))
     n2 = str_to_decint(str(2))
     assert decint_mul(n1, n2) == str_to_decint(str(n))
+
+    n1 = str_to_decint(str(math.isqrt(n - 1) + 1))
+    assert decint_mul(n1, n1) == str_to_decint(str(n1 * n1))
