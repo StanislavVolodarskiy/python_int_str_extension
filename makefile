@@ -9,7 +9,7 @@ clean:
 		build \
 		dist \
 		int_str.egg-info \
-		int_str.cpython-310-x86_64-linux-gnu.so \
+		int_str.cpython-311-x86_64-linux-gnu.so \
 		.pytest_cache
 	# find * -name '*.pyc' -delete
 	# find * -name __pycache__ -delete

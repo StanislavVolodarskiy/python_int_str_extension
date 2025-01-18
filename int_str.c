@@ -209,7 +209,7 @@ long_to_declong(PyLongObject *a)
             });
     }
 
-    Py_SIZE(b) = (Py_SIZE(a) < 0) ? -size : size;
+    Py_SET_SIZE(b, (Py_SIZE(a) < 0) ? -size : size);
 
     return b;
 }

@@ -1,3 +1,4 @@
+import contextlib
 import math
 import sys
 from int_str import (
@@ -10,6 +11,14 @@ from int_str import (
 )
 
 
+@contextlib.contextmanager
+def max_digits(n):
+    old = sys.get_int_max_str_digits()
+    sys.set_int_max_str_digits(n)
+    yield
+    sys.set_int_max_str_digits(old)
+
+
 def get_shift():
     p = 0
     while True:
@@ -20,13 +29,15 @@ def get_shift():
 
 
 def test_str_to_int():
-    for i in tuple(range(100)) + tuple(9 ** 9 ** p for p in range(6)):
-        assert str_to_int(str(i)) == i
+    with max_digits(1000000):
+        for i in tuple(range(100)) + tuple(9 ** 9 ** p for p in range(6)):
+            assert str_to_int(str(i)) == i
 
 
 def test_int_to_str():
-    for i in tuple(range(100)) + tuple(9 ** 9 ** p for p in range(6)):
-        assert int_to_str(i) == str(i)
+    with max_digits(1000000):
+        for i in tuple(range(100)) + tuple(9 ** 9 ** p for p in range(6)):
+            assert int_to_str(i) == str(i)
 
 
 def test_shift():
